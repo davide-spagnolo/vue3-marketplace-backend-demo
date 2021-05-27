@@ -21,11 +21,10 @@ app.post('/cart', (req, res) => {
     fs.readFile(CART_DATA_FILE, (err, data) => {
       const cartProducts = JSON.parse(data);
       const newCartProduct = {
-        id: req.body.id,
-        title: req.body.title,
-        description: req.body.description,
-        price: req.body.price,
-        image_tag: req.body.image_tag,
+        id: req.body.sys.id,
+        title: req.body.fields.title,
+        price: req.body.fields.price,
+        image_tag: req.body.fields.image.fields.file.url,
         quantity: 1
       };
       let cartProductExists = false;
@@ -43,15 +42,32 @@ app.post('/cart', (req, res) => {
     });
   });
 
+  app.post('/cart/add/quantity', (req, res) => {
+    fs.readFile(CART_DATA_FILE, (err, data) => {
+      const cartProducts = JSON.parse(data);
+      cartProducts.map((cartProduct) => {
+        if (cartProduct.id ===req.body.id) {
+          cartProduct.quantity++;
+        }
+      });
+      fs.writeFile(CART_DATA_FILE, JSON.stringify(cartProducts, null, 4), () => {
+        res.setHeader('Cache-Control', 'no-cache');
+        res.json(cartProducts);
+      });
+    });
+  });
+
   app.delete('/cart/delete', (req, res) => {
     fs.readFile(CART_DATA_FILE, (err, data) => {
       let cartProducts = JSON.parse(data);
+      console.log("body",req.body);
+      console.log("into delete");
       cartProducts.map((cartProduct) => {
         if (cartProduct.id === req.body.id && cartProduct.quantity > 1) {
           cartProduct.quantity--;
         } else if (cartProduct.id === req.body.id && cartProduct.quantity === 1) {
-          const cartIndexToRemove = cartProducts.findIndex(cartProduct => cartProduct.id === req.body.id);
-          cartProducts.splice(cartIndexToRemove, 1);
+        const cartIndexToRemove = cartProducts.findIndex(cartProduct => cartProduct.id === req.body.id);
+        cartProducts.splice(cartIndexToRemove, 1);
         }
       });
       fs.writeFile(CART_DATA_FILE, JSON.stringify(cartProducts, null, 4), () => {
